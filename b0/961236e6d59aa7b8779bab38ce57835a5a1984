@@ -1,0 +1,23 @@
+vercel.json
+  s_bdb2decc40d251::t_62b79cba0e6c7c 1-19
+.nvmrc
+  s_bdb2decc40d251::t_ff294bc113c43e 1
+README.md
+  s_bdb2decc40d251::t_c6ca252c370f3a 40-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b0961236e6d59aa7b8779bab38ce57835a5a1984",
+  "prompts": {},
+  "sessions": {
+    "s_bdb2decc40d251": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "56e6b730-d896-4f8e-8747-cd7a3c45fc5d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Aviral Singh <aviral.singh@spinny.com>"
+    }
+  }
+}
