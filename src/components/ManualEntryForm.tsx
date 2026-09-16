@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { addManualEntry, todayKey } from '../lib/entries'
+import { todayKey } from '../lib/dates'
+import { addManualEntry } from '../lib/entries'
 import { useAuth } from '../contexts/AuthContext'
 
 export function ManualEntryForm() {
