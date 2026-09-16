@@ -1,0 +1,35 @@
+.oxlintrc.json
+  s_58f217c77cd162::t_9b603afc7d1c83 1-8
+package-lock.json
+  s_58f217c77cd162::t_dae457b66e1be0 1-2999
+package.json
+  s_58f217c77cd162::t_043aeacc60deb0 1-28
+public/favicon.svg
+  s_58f217c77cd162::t_c6035227a90ec4 1
+public/icons.svg
+  s_58f217c77cd162::t_bfa7d916a9f02f 1-24
+src/main.tsx
+  s_58f217c77cd162::t_41cd85fce69d2d 1-10
+tsconfig.app.json
+  s_58f217c77cd162::t_4e1e39da2f6ea4 1-26
+tsconfig.json
+  s_58f217c77cd162::t_f1e2b4db66cd3c 1-7
+tsconfig.node.json
+  s_58f217c77cd162::t_b89efd7d9e0ff0 1-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "87c5549ab4d8935103ad46d292f58ebc59ef4f1a",
+  "prompts": {},
+  "sessions": {
+    "s_58f217c77cd162": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1c18d3f-52a5-45c3-9eda-caeae42389a8",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Aviral Singh <aviral.singh@spinny.com>"
+    }
+  }
+}
