@@ -66,3 +66,24 @@ export async function clockOut(uid: string, entryId: string) {
     clockOut: Timestamp.now(),
   })
 }
+
+/** Adds a completed entry for a past/custom date, given local time-of-day strings like "09:30". */
+export async function addManualEntry(
+  uid: string,
+  date: string,
+  clockInTime: string,
+  clockOutTime: string,
+) {
+  const clockIn = new Date(`${date}T${clockInTime}`)
+  const clockOut = new Date(`${date}T${clockOutTime}`)
+
+  if (clockOut <= clockIn) {
+    throw new Error('Clock out must be after clock in')
+  }
+
+  await addDoc(entriesRef(uid), {
+    date,
+    clockIn: Timestamp.fromDate(clockIn),
+    clockOut: Timestamp.fromDate(clockOut),
+  })
+}

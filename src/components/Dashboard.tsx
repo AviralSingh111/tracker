@@ -8,6 +8,7 @@ import type { TimeEntry, UserSettings } from '../types'
 import { AlertBanner } from './AlertBanner'
 import { ClockCard } from './ClockCard'
 import { HistoryTable } from './HistoryTable'
+import { ManualEntryForm } from './ManualEntryForm'
 import { SettingsPanel } from './SettingsPanel'
 
 const HISTORY_DAYS = 30
@@ -39,9 +40,14 @@ export function Dashboard() {
   const openEntry = entries.find((e) => e.clockOut === null)
   const days = summarizeDays(entries, now)
   const todayHours = days.find((d) => d.date === todayKey())?.hours ?? 0
+  const hasEnoughData = days.length > 0
   const progress = calculateWeekProgress(entries, settings.targetHours, now)
 
   useEffect(() => {
+    if (!hasEnoughData) {
+      lastAlertedRef.current = false
+      return
+    }
     if (progress.isBehindTarget && !lastAlertedRef.current) {
       lastAlertedRef.current = true
       notify(
@@ -52,7 +58,7 @@ export function Dashboard() {
     if (!progress.isBehindTarget) {
       lastAlertedRef.current = false
     }
-  }, [progress])
+  }, [progress, hasEnoughData])
 
   async function handleClockIn() {
     if (!user) return
@@ -96,12 +102,14 @@ export function Dashboard() {
           onClockOut={handleClockOut}
         />
 
-        <AlertBanner progress={progress} />
+        {hasEnoughData && <AlertBanner progress={progress} />}
 
         <SettingsPanel
           targetHours={settings.targetHours}
           onChange={(targetHours) => user && saveSettings(user.uid, { targetHours })}
         />
+
+        <ManualEntryForm />
 
         <HistoryTable days={days} />
       </div>
