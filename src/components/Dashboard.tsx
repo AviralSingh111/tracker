@@ -18,6 +18,7 @@ export function Dashboard() {
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [settings, setSettings] = useState<UserSettings>({ targetHours: 8 })
   const [busy, setBusy] = useState(false)
+  const [clockInError, setClockInError] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
   const lastAlertedRef = useRef(false)
 
@@ -60,11 +61,14 @@ export function Dashboard() {
     }
   }, [progress, hasEnoughData])
 
-  async function handleClockIn() {
+  async function handleClockIn(atTime: string) {
     if (!user) return
     setBusy(true)
+    setClockInError(null)
     try {
-      await clockIn(user.uid)
+      await clockIn(user.uid, atTime)
+    } catch (err) {
+      setClockInError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setBusy(false)
     }
@@ -101,6 +105,10 @@ export function Dashboard() {
           onClockIn={handleClockIn}
           onClockOut={handleClockOut}
         />
+
+        {clockInError && (
+          <p className="text-red-400 text-sm text-center -mt-2">{clockInError}</p>
+        )}
 
         {hasEnoughData && <AlertBanner progress={progress} />}
 

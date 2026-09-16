@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import type { TimeEntry } from '../types'
 
 interface ClockCardProps {
   openEntry: TimeEntry | undefined
   todayHours: number
   busy: boolean
-  onClockIn: () => void
+  onClockIn: (atTime: string) => void
   onClockOut: () => void
 }
 
@@ -12,6 +13,11 @@ function formatHours(hours: number) {
   const h = Math.floor(hours)
   const m = Math.round((hours - h) * 60)
   return `${h}h ${m.toString().padStart(2, '0')}m`
+}
+
+function nowTimeString() {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 export function ClockCard({
@@ -22,6 +28,7 @@ export function ClockCard({
   onClockOut,
 }: ClockCardProps) {
   const isClockedIn = Boolean(openEntry)
+  const [clockInTime, setClockInTime] = useState(nowTimeString)
 
   return (
     <div className="bg-neutral-900 rounded-2xl p-6 flex flex-col items-center gap-4">
@@ -32,10 +39,24 @@ export function ClockCard({
         </p>
       </div>
 
+      {!isClockedIn && (
+        <label className="w-full flex flex-col gap-1">
+          <span className="text-neutral-400 text-xs">
+            What time did you clock in?
+          </span>
+          <input
+            type="time"
+            value={clockInTime}
+            onChange={(e) => setClockInTime(e.target.value)}
+            className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </label>
+      )}
+
       <button
         type="button"
         disabled={busy}
-        onClick={isClockedIn ? onClockOut : onClockIn}
+        onClick={() => (isClockedIn ? onClockOut() : onClockIn(clockInTime))}
         className={`w-full rounded-xl py-3 font-medium transition disabled:opacity-50 ${
           isClockedIn
             ? 'bg-red-600 hover:bg-red-500 text-white'

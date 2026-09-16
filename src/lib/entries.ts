@@ -53,10 +53,17 @@ export function subscribeEntries(
   })
 }
 
-export async function clockIn(uid: string) {
+/** Clocks in now, or at `atTime` ("HH:MM") today if the user started earlier than they opened the app. */
+export async function clockIn(uid: string, atTime?: string) {
+  const clockInDate = atTime ? new Date(`${todayKey()}T${atTime}`) : new Date()
+
+  if (clockInDate.getTime() > Date.now()) {
+    throw new Error('Clock-in time cannot be in the future')
+  }
+
   await addDoc(entriesRef(uid), {
     date: todayKey(),
-    clockIn: Timestamp.now(),
+    clockIn: Timestamp.fromDate(clockInDate),
     clockOut: null,
   })
 }
