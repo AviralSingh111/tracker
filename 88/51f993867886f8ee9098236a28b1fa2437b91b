@@ -1,0 +1,27 @@
+src/lib/entries.ts
+  s_58f217c77cd162::t_1d5139f2a3e562 69-89
+src/components/Dashboard.tsx
+  s_58f217c77cd162::t_f739d6c6aacac7 61
+  s_58f217c77cd162::t_7ac5f2cb0d9109 105,112
+  s_58f217c77cd162::t_d08179d1ec81f2 43,47-50
+  s_58f217c77cd162::t_0a35ee7a8e799a 11
+  s_58f217c77cd162::t_133c7b0e4b7f79 113
+src/components/ManualEntryForm.tsx
+  s_58f217c77cd162::t_0125f79f6474b0 1-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8851f993867886f8ee9098236a28b1fa2437b91b",
+  "prompts": {},
+  "sessions": {
+    "s_58f217c77cd162": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1c18d3f-52a5-45c3-9eda-caeae42389a8",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Aviral Singh <aviral.singh@spinny.com>"
+    }
+  }
+}
