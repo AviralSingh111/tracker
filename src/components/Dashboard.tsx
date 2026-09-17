@@ -125,6 +125,14 @@ export function Dashboard() {
           <p className="text-red-400 text-sm text-center -mt-2">{clockError}</p>
         )}
 
+        {hasEnoughData && (
+          <CountdownCard
+            remaining={remaining}
+            targetHours={settings.targetHours}
+            live={Boolean(openEntry)}
+          />
+        )}
+
         {hasEnoughData && <AlertBanner progress={progress} />}
 
         <SettingsPanel
@@ -135,14 +143,6 @@ export function Dashboard() {
         <ManualEntryForm />
 
         <HistoryTable days={days} entries={entries} now={now} />
-
-        {hasEnoughData && (
-          <CountdownCard
-            remaining={remaining}
-            targetHours={settings.targetHours}
-            live={Boolean(openEntry)}
-          />
-        )}
       </div>
     </div>
   )
