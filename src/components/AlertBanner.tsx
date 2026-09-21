@@ -1,25 +1,17 @@
-import type { WeekProgress } from '../lib/averageCalc'
-import { formatHours } from '../lib/format'
+import { todayKey } from '../lib/dates'
+import { offDayLabel } from '../lib/holidays'
 
-export function AlertBanner({ progress }: { progress: WeekProgress }) {
-  if (!progress.isTodayWorkday) {
-    return (
-      <div className="bg-neutral-900 border border-neutral-800 text-neutral-400 rounded-2xl p-4 text-sm">
-        {progress.todayOffReason ?? 'Day off'} — no target today.
-      </div>
-    )
-  }
-
-  if (progress.workdaysRemainingIncludingToday === 0) return null
-
-  // Being behind is reported by the countdown card instead — it already shows
-  // exactly how much extra there is to work.
-  if (progress.isBehindTarget) return null
+/**
+ * A quiet note on weekends and holidays. There's deliberately no "on track" or
+ * "behind" message — the countdown reports both, in hours rather than a claim.
+ */
+export function AlertBanner({ now }: { now: number }) {
+  const offReason = offDayLabel(todayKey(new Date(now)))
+  if (!offReason) return null
 
   return (
-    <div className="bg-emerald-950 border border-emerald-800 text-emerald-300 rounded-2xl p-4 text-sm">
-      You're on track for your {formatHours(progress.targetHours)}/day average
-      this week.
+    <div className="bg-neutral-900 border border-neutral-800 text-neutral-400 rounded-2xl p-4 text-sm">
+      {offReason} — no target today.
     </div>
   )
 }

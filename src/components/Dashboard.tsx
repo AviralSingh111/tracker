@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import {
   calculateRemaining,
-  calculateWeekProgress,
   summarizeDays,
+  summarizeMonths,
 } from '../lib/averageCalc'
-import { todayKey } from '../lib/dates'
+import { thisMonthKey, todayKey } from '../lib/dates'
 import {
   clockIn,
   clockOut,
@@ -19,9 +19,11 @@ import { ClockCard } from './ClockCard'
 import { CountdownCard } from './CountdownCard'
 import { HistoryTable } from './HistoryTable'
 import { ManualEntryForm } from './ManualEntryForm'
+import { MonthlySummary } from './MonthlySummary'
 import { SettingsPanel } from './SettingsPanel'
 
-const HISTORY_DAYS = 30
+// A year, so past months keep their averages instead of ageing out.
+const HISTORY_DAYS = 365
 
 export function Dashboard() {
   const { user, logout } = useAuth()
@@ -31,6 +33,7 @@ export function Dashboard() {
   const [busy, setBusy] = useState(false)
   const [clockError, setClockError] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
+  const [selectedMonth, setSelectedMonth] = useState(thisMonthKey)
 
   useEffect(() => {
     if (!user) return
@@ -70,8 +73,8 @@ export function Dashboard() {
   const days = summarizeDays(entries, now, settings.targetHours)
   const todayHours = days.find((d) => d.date === todayKey())?.hours ?? 0
   const hasEnoughData = days.length > 0
-  const progress = calculateWeekProgress(entries, settings.targetHours, now)
   const remaining = calculateRemaining(entries, settings.targetHours, now)
+  const months = summarizeMonths(entries, settings.targetHours, now)
 
   async function handleClockIn(atTime: string) {
     if (!user) return
@@ -133,7 +136,7 @@ export function Dashboard() {
           />
         )}
 
-        {hasEnoughData && <AlertBanner progress={progress} />}
+        <AlertBanner now={now} />
 
         <SettingsPanel
           targetHours={settings.targetHours}
@@ -142,7 +145,21 @@ export function Dashboard() {
 
         <ManualEntryForm />
 
-        <HistoryTable days={days} entries={entries} now={now} />
+        {hasEnoughData && (
+          <MonthlySummary
+            months={months}
+            selectedMonth={selectedMonth}
+            onSelect={setSelectedMonth}
+            targetHours={settings.targetHours}
+          />
+        )}
+
+        <HistoryTable
+          days={days}
+          entries={entries}
+          now={now}
+          month={selectedMonth}
+        />
       </div>
     </div>
   )

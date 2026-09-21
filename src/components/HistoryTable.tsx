@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { formatDateKey, formatHours } from '../lib/format'
+import { monthOf } from '../lib/dates'
+import { formatDateKey, formatHours, formatMonthKey } from '../lib/format'
 import { offDayLabel } from '../lib/holidays'
 import type { DaySummary, TimeEntry } from '../types'
 import { EntryRow } from './EntryRow'
@@ -8,11 +9,15 @@ interface HistoryTableProps {
   days: DaySummary[]
   entries: TimeEntry[]
   now: number
+  /** "YYYY-MM" — only this month's days are listed. */
+  month: string
 }
 
-export function HistoryTable({ days, entries, now }: HistoryTableProps) {
+export function HistoryTable({ days, entries, now, month }: HistoryTableProps) {
   const [expanded, setExpanded] = useState<string | null>(null)
-  const sorted = [...days].sort((a, b) => b.date.localeCompare(a.date))
+  const sorted = days
+    .filter((d) => monthOf(d.date) === month)
+    .sort((a, b) => b.date.localeCompare(a.date))
 
   const entriesByDate = new Map<string, TimeEntry[]>()
   for (const entry of entries) {
@@ -23,9 +28,11 @@ export function HistoryTable({ days, entries, now }: HistoryTableProps) {
 
   return (
     <div className="bg-neutral-900 rounded-2xl p-6">
-      <p className="text-neutral-400 text-sm mb-3">Recent history</p>
+      <p className="text-neutral-400 text-sm mb-3">
+        {formatMonthKey(month)}
+      </p>
       {sorted.length === 0 ? (
-        <p className="text-neutral-600 text-sm">No entries yet.</p>
+        <p className="text-neutral-600 text-sm">Nothing logged this month.</p>
       ) : (
         <ul className="flex flex-col">
           {sorted.map((day) => {

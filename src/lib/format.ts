@@ -28,6 +28,23 @@ export function nowTimeString() {
   return toTimeInput(Date.now())
 }
 
+/** "2026-09" -> "September 2026". */
+export function formatMonthKey(monthKey: string) {
+  const [year, month] = monthKey.split('-').map(Number)
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+/** "2026-09" -> "September". */
+export function formatMonthName(monthKey: string) {
+  const [year, month] = monthKey.split('-').map(Number)
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+    month: 'long',
+  })
+}
+
 /** "2026-09-16" -> "Wed, 16 Sep" for display. */
 export function formatDateKey(dateKey: string) {
   const [year, month, day] = dateKey.split('-').map(Number)
