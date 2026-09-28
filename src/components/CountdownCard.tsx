@@ -14,7 +14,7 @@ export function CountdownCard({ remaining, targetHours, live }: CountdownCardPro
     isTodayWorkday,
     overallRemainingHours,
     overallSince,
-    overallWorkdayCount,
+    overallLoggedWorkdays,
   } = remaining
 
   const todayDone = isTodayWorkday && todayRemainingHours === 0
@@ -64,9 +64,9 @@ export function CountdownCard({ remaining, targetHours, live }: CountdownCardPro
           </p>
           {overallSince && (
             <p className="text-neutral-600 text-xs mt-1">
-              To average {formatHours(targetHours)}/day across{' '}
-              {overallWorkdayCount} working{' '}
-              {overallWorkdayCount === 1 ? 'day' : 'days'} since{' '}
+              To average {formatHours(targetHours)}/day across the{' '}
+              {overallLoggedWorkdays} working{' '}
+              {overallLoggedWorkdays === 1 ? 'day' : 'days'} you logged since{' '}
               {formatDateKey(overallSince)}
             </p>
           )}

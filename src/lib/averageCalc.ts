@@ -1,10 +1,5 @@
 import type { DaySummary, TimeEntry } from '../types'
-import {
-  datesBetween,
-  monthOf,
-  thisMonthKey,
-  todayKey,
-} from './dates'
+import { monthOf, thisMonthKey, todayKey } from './dates'
 import { isWorkday } from './holidays'
 
 const MS_PER_HOUR = 1000 * 60 * 60
@@ -41,21 +36,23 @@ export interface RemainingWork {
   /** Hours still owed today to hit the daily target. 0 on an off day. */
   todayRemainingHours: number
   isTodayWorkday: boolean
-  /** Total shortfall across the tracked workdays. */
+  /** Total shortfall across the days actually clocked in. */
   overallRemainingHours: number
   /** First day logged this month — where the overall figure starts counting. */
   overallSince: string | null
-  overallWorkdayCount: number
+  /** Working days with time logged — the ones the target is charged against. */
+  overallLoggedWorkdays: number
 }
 
 /**
- * Time still owed: for today, and cumulatively since you started logging.
+ * Time still owed: for today, and cumulatively across the days you logged.
  *
- * The overall figure counts from your FIRST LOGGED DAY of the month, not from
- * the 1st — days before you started tracking were never owed, and counting
- * them makes the number meaningless. It's `target × workdays in that span`
- * minus everything logged, so it's what you'd have to put in to bring your
- * running average back up to the target. It starts fresh each month.
+ * Only days you actually clocked in count towards the target. A workday with
+ * no entry is treated as leave, not as 8 hours owed — otherwise time off
+ * builds a debt you can never pay down. Hours logged on a weekend or holiday
+ * are still credited, they just don't add a target of their own.
+ *
+ * It starts fresh each month.
  */
 export function calculateRemaining(
   entries: TimeEntry[],
@@ -73,28 +70,14 @@ export function calculateRemaining(
     ? Math.max(0, targetHours - todayHours)
     : 0
 
-  const firstDate =
-    days.find((d) => monthOf(d.date) === currentMonth && d.hours > 0)?.date ??
-    null
-
-  if (!firstDate) {
-    return {
-      todayHours,
-      todayRemainingHours,
-      isTodayWorkday: todayIsWorkday,
-      overallRemainingHours: 0,
-      overallSince: null,
-      overallWorkdayCount: 0,
-    }
-  }
-
-  const span = datesBetween(firstDate, todayStr)
-  const workdays = span.filter(isWorkday)
-  // Off-day hours still count as credit, the same as before.
-  const loggedHours = span.reduce(
-    (sum, date) => sum + (hoursByDate.get(date) ?? 0),
-    0,
+  // Only days with time on them. A blank workday is leave, not a debt.
+  const loggedDays = days.filter(
+    (d) => monthOf(d.date) === currentMonth && d.hours > 0 && d.date <= todayStr,
   )
+
+  // Weekend and holiday hours are credited but carry no target of their own.
+  const loggedWorkdays = loggedDays.filter((d) => isWorkday(d.date))
+  const loggedHours = loggedDays.reduce((sum, d) => sum + d.hours, 0)
 
   return {
     todayHours,
@@ -102,10 +85,10 @@ export function calculateRemaining(
     isTodayWorkday: todayIsWorkday,
     overallRemainingHours: Math.max(
       0,
-      workdays.length * targetHours - loggedHours,
+      loggedWorkdays.length * targetHours - loggedHours,
     ),
-    overallSince: firstDate,
-    overallWorkdayCount: workdays.length,
+    overallSince: loggedDays[0]?.date ?? null,
+    overallLoggedWorkdays: loggedWorkdays.length,
   }
 }
 
