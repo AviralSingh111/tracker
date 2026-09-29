@@ -4,8 +4,10 @@ import {
   calculateRemaining,
   summarizeDays,
   summarizeMonths,
+  summarizeWeeks,
 } from '../lib/averageCalc'
-import { thisMonthKey, todayKey } from '../lib/dates'
+import { todayKey } from '../lib/dates'
+import { formatMonthKey, formatWeekRange } from '../lib/format'
 import {
   clockIn,
   clockOut,
@@ -19,7 +21,7 @@ import { ClockCard } from './ClockCard'
 import { CountdownCard } from './CountdownCard'
 import { HistoryTable } from './HistoryTable'
 import { ManualEntryForm } from './ManualEntryForm'
-import { MonthlySummary } from './MonthlySummary'
+import { PeriodSummaryCard } from './PeriodSummaryCard'
 import { SettingsPanel } from './SettingsPanel'
 
 // A year, so past months keep their averages instead of ageing out.
@@ -33,7 +35,6 @@ export function Dashboard() {
   const [busy, setBusy] = useState(false)
   const [clockError, setClockError] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
-  const [selectedMonth, setSelectedMonth] = useState(thisMonthKey)
 
   useEffect(() => {
     if (!user) return
@@ -74,6 +75,7 @@ export function Dashboard() {
   const todayHours = days.find((d) => d.date === todayKey())?.hours ?? 0
   const hasEnoughData = days.length > 0
   const remaining = calculateRemaining(entries, settings.targetHours, now)
+  const weeks = summarizeWeeks(entries, settings.targetHours, now)
   const months = summarizeMonths(entries, settings.targetHours, now)
 
   async function handleClockIn(atTime: string) {
@@ -146,19 +148,29 @@ export function Dashboard() {
         <ManualEntryForm />
 
         {hasEnoughData && (
-          <MonthlySummary
-            months={months}
-            selectedMonth={selectedMonth}
-            onSelect={setSelectedMonth}
-            targetHours={settings.targetHours}
-          />
+          <>
+            <PeriodSummaryCard
+              title="Weekly average"
+              periods={weeks}
+              formatKey={formatWeekRange}
+              targetHours={settings.targetHours}
+            />
+
+            <PeriodSummaryCard
+              title="Monthly average"
+              periods={months}
+              formatKey={formatMonthKey}
+              targetHours={settings.targetHours}
+            />
+          </>
         )}
 
         <HistoryTable
           days={days}
           entries={entries}
           now={now}
-          month={selectedMonth}
+          weeks={weeks}
+          months={months}
         />
       </div>
     </div>

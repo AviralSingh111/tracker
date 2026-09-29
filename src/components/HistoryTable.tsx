@@ -1,23 +1,51 @@
 import { useState } from 'react'
-import { monthOf } from '../lib/dates'
-import { formatDateKey, formatHours, formatMonthKey } from '../lib/format'
+import type { PeriodSummary } from '../lib/averageCalc'
+import { monthOf, startOfWeek, thisMonthKey } from '../lib/dates'
+import {
+  formatDateKey,
+  formatHours,
+  formatMonthKey,
+  formatWeekRange,
+} from '../lib/format'
 import { offDayLabel } from '../lib/holidays'
 import type { DaySummary, TimeEntry } from '../types'
 import { EntryRow } from './EntryRow'
+
+type View = 'days' | 'weeks' | 'months'
+
+/** Which period the day list is narrowed to. */
+interface Scope {
+  type: 'week' | 'month'
+  key: string
+}
 
 interface HistoryTableProps {
   days: DaySummary[]
   entries: TimeEntry[]
   now: number
-  /** "YYYY-MM" — only this month's days are listed. */
-  month: string
+  weeks: PeriodSummary[]
+  months: PeriodSummary[]
 }
 
-export function HistoryTable({ days, entries, now, month }: HistoryTableProps) {
+function scopeLabel(scope: Scope) {
+  return scope.type === 'month'
+    ? formatMonthKey(scope.key)
+    : formatWeekRange(scope.key)
+}
+
+export function HistoryTable({
+  days,
+  entries,
+  now,
+  weeks,
+  months,
+}: HistoryTableProps) {
+  const [view, setView] = useState<View>('days')
+  const [scope, setScope] = useState<Scope>({
+    type: 'month',
+    key: thisMonthKey(),
+  })
   const [expanded, setExpanded] = useState<string | null>(null)
-  const sorted = days
-    .filter((d) => monthOf(d.date) === month)
-    .sort((a, b) => b.date.localeCompare(a.date))
 
   const entriesByDate = new Map<string, TimeEntry[]>()
   for (const entry of entries) {
@@ -26,16 +54,110 @@ export function HistoryTable({ days, entries, now, month }: HistoryTableProps) {
     entriesByDate.set(entry.date, list)
   }
 
+  const inScope = (dateKey: string) =>
+    scope.type === 'month'
+      ? monthOf(dateKey) === scope.key
+      : startOfWeek(dateKey) === scope.key
+
+  const scopedDays = days
+    .filter((d) => inScope(d.date))
+    .sort((a, b) => b.date.localeCompare(a.date))
+
+  /** Drill from a period row into that period's days. */
+  function drillInto(type: Scope['type'], key: string) {
+    setScope({ type, key })
+    setView('days')
+    setExpanded(null)
+  }
+
+  const periods = view === 'weeks' ? weeks : months
+
   return (
     <div className="bg-neutral-900 rounded-2xl p-6">
-      <p className="text-neutral-400 text-sm mb-3">
-        {formatMonthKey(month)}
-      </p>
-      {sorted.length === 0 ? (
-        <p className="text-neutral-600 text-sm">Nothing logged this month.</p>
+      <div className="flex justify-between items-center gap-2 mb-3">
+        <p className="text-neutral-400 text-sm truncate">
+          {view === 'days' ? scopeLabel(scope) : 'History'}
+        </p>
+        <select
+          value={view}
+          onChange={(e) => {
+            setView(e.target.value as View)
+            setExpanded(null)
+          }}
+          className="bg-neutral-800 text-neutral-300 text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500 shrink-0"
+        >
+          <option value="days">Days</option>
+          <option value="weeks">Weeks</option>
+          <option value="months">Months</option>
+        </select>
+      </div>
+
+      {view !== 'days' ? (
+        <ul className="flex flex-col">
+          {periods.map((p) => {
+            const ahead = p.differenceFromTarget >= 0
+            const label =
+              view === 'weeks' ? formatWeekRange(p.key) : formatMonthKey(p.key)
+
+            return (
+              <li
+                key={p.key}
+                className="border-b border-neutral-800 last:border-0"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    drillInto(view === 'weeks' ? 'week' : 'month', p.key)
+                  }
+                  className="w-full text-left py-2.5 hover:opacity-80 transition"
+                >
+                  <div className="flex justify-between items-baseline gap-2">
+                    <span className="text-sm text-neutral-200">
+                      {label}
+                      {p.isCurrent && (
+                        <span className="text-neutral-500 text-xs"> · so far</span>
+                      )}
+                    </span>
+                    <span className="text-sm font-semibold text-white tabular-nums">
+                      {p.loggedDays === 0
+                        ? '—'
+                        : `${formatHours(p.averagePerLoggedDay)}`}
+                      {p.loggedDays > 0 && (
+                        <span className="text-neutral-500 font-normal">
+                          /day
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-2 mt-0.5">
+                    <span className="text-neutral-500 text-xs">
+                      {p.loggedDays === 0
+                        ? 'Nothing logged'
+                        : `${formatHours(p.totalHours)} over ${
+                            p.loggedDays
+                          } logged ${p.loggedDays === 1 ? 'day' : 'days'}`}
+                    </span>
+                    {p.loggedDays > 0 && (
+                      <span
+                        className={`text-xs tabular-nums ${
+                          ahead ? 'text-emerald-400' : 'text-amber-400'
+                        }`}
+                      >
+                        {ahead ? '+' : '−'}
+                        {formatHours(Math.abs(p.differenceFromTarget))}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      ) : scopedDays.length === 0 ? (
+        <p className="text-neutral-600 text-sm">Nothing logged in this period.</p>
       ) : (
         <ul className="flex flex-col">
-          {sorted.map((day) => {
+          {scopedDays.map((day) => {
             const offReason = offDayLabel(day.date)
             const isExpanded = expanded === day.date
             const dayEntries = [...(entriesByDate.get(day.date) ?? [])].sort(
@@ -82,8 +204,11 @@ export function HistoryTable({ days, entries, now, month }: HistoryTableProps) {
           })}
         </ul>
       )}
+
       <p className="text-neutral-600 text-xs mt-3">
-        Tap a day to edit its clock-in and clock-out times.
+        {view === 'days'
+          ? 'Tap a day to edit its clock-in and clock-out times.'
+          : `Tap a ${view === 'weeks' ? 'week' : 'month'} to see its days.`}
       </p>
     </div>
   )

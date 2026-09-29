@@ -1,3 +1,5 @@
+import { parseDateKey } from './dates'
+
 /** Renders a decimal hour count as "7h 30m" (or "45m" under an hour). */
 export function formatHours(hours: number) {
   const totalMinutes = Math.max(0, Math.round(hours * 60))
@@ -26,6 +28,25 @@ export function toTimeInput(ms: number) {
 
 export function nowTimeString() {
   return toTimeInput(Date.now())
+}
+
+/** A week's Monday key -> "22 – 28 Sep" (or "29 Sep – 5 Oct" across months). */
+export function formatWeekRange(weekStartKey: string) {
+  const start = parseDateKey(weekStartKey)
+  const end = parseDateKey(weekStartKey)
+  end.setDate(end.getDate() + 6)
+
+  // Within one month the month name is stated once: "Sep 21 – 27".
+  const sameMonth = start.getMonth() === end.getMonth()
+  const startLabel = start.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  })
+  const endLabel = end.toLocaleDateString(undefined, {
+    day: 'numeric',
+    ...(sameMonth ? {} : { month: 'short' }),
+  })
+  return `${startLabel} – ${endLabel}`
 }
 
 /** "2026-09" -> "September 2026". */

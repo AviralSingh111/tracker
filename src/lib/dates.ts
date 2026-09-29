@@ -32,6 +32,25 @@ export function lastDayOfMonth(monthKey: string) {
   return todayKey(new Date(year, month, 0)) // day 0 = last day of previous month
 }
 
+/** Monday of the week a date key falls in — used as that week's id. */
+export function startOfWeek(dateKey: string) {
+  const d = parseDateKey(dateKey)
+  const day = d.getDay() // 0 = Sun
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
+  return todayKey(d)
+}
+
+/** Sunday of the week a date key falls in. */
+export function endOfWeek(dateKey: string) {
+  const d = parseDateKey(startOfWeek(dateKey))
+  d.setDate(d.getDate() + 6)
+  return todayKey(d)
+}
+
+export function thisWeekKey(d = new Date()) {
+  return startOfWeek(todayKey(d))
+}
+
 /** Every date key from `from` to `to` inclusive. */
 export function datesBetween(from: string, to: string): string[] {
   const dates: string[] = []
