@@ -1,11 +1,12 @@
 import type { RemainingWork } from '../lib/averageCalc'
-import { formatCountdown, formatHours } from '../lib/format'
+import { formatCountdown, formatHours, formatLeaveBy } from '../lib/format'
 
 interface CountdownCardProps {
   remaining: RemainingWork
   targetHours: number
   /** True while clocked in — the numbers are ticking down in real time. */
   live: boolean
+  now: number
 }
 
 interface RowProps {
@@ -13,12 +14,16 @@ interface RowProps {
   hours: number
   note: string | null
   live: boolean
+  now: number
   doneLabel: string
   emphasis?: boolean
 }
 
-function Row({ label, hours, note, live, doneLabel, emphasis }: RowProps) {
+function Row({ label, hours, note, live, now, doneLabel, emphasis }: RowProps) {
   const done = hours === 0
+  // Only meaningful while the clock is running — otherwise the finish time
+  // depends on when you next clock in, not on now.
+  const leaveBy = !done && live ? formatLeaveBy(now, hours) : null
 
   return (
     <div>
@@ -30,12 +35,22 @@ function Row({ label, hours, note, live, doneLabel, emphasis }: RowProps) {
       >
         {done ? doneLabel : live ? formatCountdown(hours) : formatHours(hours)}
       </p>
+      {leaveBy && (
+        <p className="text-neutral-400 text-xs mt-1 tabular-nums">
+          Leave by {leaveBy}
+        </p>
+      )}
       {note && <p className="text-neutral-600 text-xs mt-1">{note}</p>}
     </div>
   )
 }
 
-export function CountdownCard({ remaining, targetHours, live }: CountdownCardProps) {
+export function CountdownCard({
+  remaining,
+  targetHours,
+  live,
+  now,
+}: CountdownCardProps) {
   const { todayRemainingHours, isTodayWorkday, week, month } = remaining
 
   function scopeNote(loggedWorkdays: number) {
@@ -68,6 +83,7 @@ export function CountdownCard({ remaining, targetHours, live }: CountdownCardPro
             hours={todayRemainingHours}
             note={null}
             live={live}
+            now={now}
             doneLabel="Done for today"
             emphasis
           />
@@ -79,6 +95,7 @@ export function CountdownCard({ remaining, targetHours, live }: CountdownCardPro
             hours={week.remainingHours}
             note={scopeNote(week.loggedWorkdays)}
             live={live}
+            now={now}
             doneLabel="Week on target"
           />
         </div>
@@ -89,6 +106,7 @@ export function CountdownCard({ remaining, targetHours, live }: CountdownCardPro
             hours={month.remainingHours}
             note={scopeNote(month.loggedWorkdays)}
             live={live}
+            now={now}
             doneLabel="Month on target"
           />
         </div>

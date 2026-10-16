@@ -135,6 +135,7 @@ export function Dashboard() {
             remaining={remaining}
             targetHours={settings.targetHours}
             live={Boolean(openEntry)}
+            now={now}
           />
         )}
 

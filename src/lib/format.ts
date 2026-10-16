@@ -1,4 +1,4 @@
-import { parseDateKey } from './dates'
+import { parseDateKey, todayKey } from './dates'
 
 /** Renders a decimal hour count as "7h 30m" (or "45m" under an hour). */
 export function formatHours(hours: number) {
@@ -18,6 +18,26 @@ export function formatCountdown(hours: number) {
   const pad = (n: number) => String(n).padStart(2, '0')
   if (h === 0) return `${m}m ${pad(s)}s`
   return `${h}h ${pad(m)}m ${pad(s)}s`
+}
+
+/**
+ * The clock time you reach after working `hoursLeft` more from `nowMs` —
+ * "4:05 pm", or "Fri 17 Oct, 2:05 am" once it spills past tonight.
+ */
+export function formatLeaveBy(nowMs: number, hoursLeft: number) {
+  const at = new Date(nowMs + hoursLeft * 3600 * 1000)
+  const time = at.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  if (todayKey(at) === todayKey(new Date(nowMs))) return time
+
+  const day = at.toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+  return `${day}, ${time}`
 }
 
 /** An epoch time as "HH:MM" for an `<input type="time">`. */
