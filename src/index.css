@@ -1,10 +1,92 @@
 @import "tailwindcss";
 
+/*
+ * One palette, one meaning per colour.
+ *   ok    — met or beat the target
+ *   short — fell short of a target that applied
+ *   live  — in progress, no verdict yet
+ * Anything else is structure or text.
+ */
+@theme {
+  --color-canvas: #08080a;
+  --color-surface: #131316;
+  --color-raised: #1e1e23;
+  --color-line: #27272e;
+
+  --color-ink: #fafafa;
+  --color-ink-2: #a3a3ad;
+  --color-ink-3: #6b6b76;
+
+  --color-ok: #34d399;
+  --color-short: #fbbf24;
+  --color-live: #818cf8;
+  --color-danger: #f87171;
+}
+
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
+}
+
+html {
+  background: var(--color-canvas);
 }
 
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Figures line up column-to-column wherever they're compared. */
+.nums {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Native pickers are light by default and fight the dark surfaces. */
+input[type='time'],
+input[type='date'] {
+  color-scheme: dark;
+}
+
+/* The page owns its pull gesture, so the platform shouldn't also bounce it. */
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Placeholder blocks, sweeping only if the viewer tolerates motion. */
+.skeleton {
+  background: var(--color-raised);
+  border-radius: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 5%),
+    transparent
+  );
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
 }

@@ -62,3 +62,21 @@ export function datesBetween(from: string, to: string): string[] {
   }
   return dates
 }
+
+/** The seven date keys of the week starting at `weekStartKey` (Mon–Sun). */
+export function daysOfWeek(weekStartKey: string): string[] {
+  const start = parseDateKey(weekStartKey)
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start)
+    d.setDate(d.getDate() + i)
+    return todayKey(d)
+  })
+}
+
+/**
+ * Whether a week touches a month at all. A week straddling the 1st belongs to
+ * both months — filing it under only one would hide those days from a drill.
+ */
+export function weekOverlapsMonth(weekStartKey: string, monthKey: string) {
+  return daysOfWeek(weekStartKey).some((d) => monthOf(d) === monthKey)
+}

@@ -9,6 +9,13 @@ export function formatHours(hours: number) {
   return `${h}h ${String(m).padStart(2, '0')}m`
 }
 
+/** Like `formatHours`, but a whole number of hours drops the "00m". */
+export function formatHoursCompact(hours: number) {
+  const totalMinutes = Math.max(0, Math.round(hours * 60))
+  if (totalMinutes % 60 === 0 && totalMinutes > 0) return `${totalMinutes / 60}h`
+  return formatHours(hours)
+}
+
 /** Same as `formatHours`, with seconds — for a live ticking countdown. */
 export function formatCountdown(hours: number) {
   const totalSeconds = Math.max(0, Math.round(hours * 3600))

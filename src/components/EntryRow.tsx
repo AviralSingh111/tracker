@@ -14,6 +14,7 @@ export function EntryRow({ entry, now }: { entry: TimeEntry; now: number }) {
   const [clockOutTime, setClockOutTime] = useState(() =>
     entry.clockOut ? toTimeInput(entry.clockOut) : nowTimeString(),
   )
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -24,10 +25,12 @@ export function EntryRow({ entry, now }: { entry: TimeEntry; now: number }) {
     setClockInTime(toTimeInput(entry.clockIn))
     setClockOutTime(entry.clockOut ? toTimeInput(entry.clockOut) : nowTimeString())
     setError(null)
+    setConfirmDelete(false)
     setEditing(true)
   }
 
-  async function save() {
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
     if (!user) return
     setBusy(true)
     setError(null)
@@ -43,7 +46,6 @@ export function EntryRow({ entry, now }: { entry: TimeEntry; now: number }) {
 
   async function remove() {
     if (!user) return
-    if (!window.confirm('Delete this entry?')) return
     setBusy(true)
     try {
       await deleteEntry(user.uid, entry.id)
@@ -52,18 +54,22 @@ export function EntryRow({ entry, now }: { entry: TimeEntry; now: number }) {
     }
   }
 
+  const input =
+    'flex-1 min-w-0 bg-raised text-ink text-xs rounded-lg px-2.5 py-2 outline-none focus:ring-2 focus:ring-live nums'
+
   if (!editing) {
     return (
-      <div className="flex items-center justify-between gap-2 text-xs text-neutral-400 py-1">
-        <span className="tabular-nums">
-          {toTimeInput(entry.clockIn)} – {isOpen ? 'now' : toTimeInput(entry.clockOut!)}
-          <span className="text-neutral-600"> · {formatHours(hours)}</span>
+      <div className="flex items-center justify-between gap-2 text-xs py-1.5">
+        <span className="text-ink-2 nums">
+          {toTimeInput(entry.clockIn)} –{' '}
+          {isOpen ? 'now' : toTimeInput(entry.clockOut!)}
+          <span className="text-ink-3"> · {formatHours(hours)}</span>
         </span>
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2.5">
           {entry.autoClosed && (
             <span
-              className="text-amber-500/80 text-[11px]"
-              title="You forgot to clock out — we credited your daily target. Edit to correct it."
+              className="text-short/80 text-[10px] border border-short/30 rounded px-1.5 py-0.5"
+              title="You forgot to clock out — your daily target was credited. Edit to correct it."
             >
               auto
             </span>
@@ -71,7 +77,7 @@ export function EntryRow({ entry, now }: { entry: TimeEntry; now: number }) {
           <button
             type="button"
             onClick={startEditing}
-            className="text-indigo-400 hover:text-indigo-300 transition"
+            className="text-live hover:opacity-80 transition"
           >
             Edit
           </button>
@@ -81,50 +87,54 @@ export function EntryRow({ entry, now }: { entry: TimeEntry; now: number }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 py-2">
+    <form onSubmit={save} className="flex flex-col gap-2 py-2">
       <div className="flex items-center gap-2">
         <input
           type="time"
           value={clockInTime}
           onChange={(e) => setClockInTime(e.target.value)}
-          className="flex-1 min-w-0 bg-neutral-800 text-white text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500"
+          className={input}
         />
-        <span className="text-neutral-600 text-xs">–</span>
+        <span className="text-ink-3 text-xs">–</span>
         <input
           type="time"
           value={clockOutTime}
           onChange={(e) => setClockOutTime(e.target.value)}
-          className="flex-1 min-w-0 bg-neutral-800 text-white text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500"
+          className={input}
         />
       </div>
 
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
 
       <div className="flex gap-2 text-xs">
         <button
-          type="button"
+          type="submit"
           disabled={busy}
-          onClick={save}
-          className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-1.5 font-medium transition"
+          className="flex-1 bg-live text-canvas rounded-lg py-2 font-medium transition hover:opacity-90 disabled:opacity-50"
         >
           Save
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg py-1.5 font-medium transition"
+          className="flex-1 bg-raised text-ink-2 rounded-lg py-2 font-medium hover:text-ink transition"
         >
           Cancel
         </button>
         <button
           type="button"
           disabled={busy}
-          onClick={remove}
-          className="px-3 bg-neutral-800 hover:bg-red-900 disabled:opacity-50 text-red-400 rounded-lg py-1.5 font-medium transition"
+          onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}
+          onBlur={() => setConfirmDelete(false)}
+          className={`px-3 rounded-lg py-2 font-medium transition disabled:opacity-50 ${
+            confirmDelete
+              ? 'bg-danger text-canvas'
+              : 'bg-raised text-danger hover:bg-danger/15'
+          }`}
         >
-          Delete
+          {confirmDelete ? 'Sure?' : 'Delete'}
         </button>
       </div>
-    </div>
+    </form>
   )
 }

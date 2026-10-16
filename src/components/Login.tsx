@@ -26,22 +26,27 @@ export function Login() {
     }
   }
 
+  const input =
+    'bg-raised text-ink text-sm rounded-xl px-3.5 py-3 outline-none focus:ring-2 focus:ring-live placeholder-ink-3'
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-950 px-4">
-      <div className="w-full max-w-sm bg-neutral-900 rounded-2xl p-8 shadow-xl">
-        <h1 className="text-2xl font-semibold text-white mb-1">Tracker</h1>
-        <p className="text-neutral-400 text-sm mb-6">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
+      <div className="w-full max-w-sm bg-surface border border-line rounded-2xl p-7">
+        <h1 className="text-xl font-semibold text-ink tracking-tight mb-1">
+          Tracker
+        </h1>
+        <p className="text-ink-3 text-sm mb-6">
           Sign in to track your working hours
         </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
           <input
             type="email"
             required
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-neutral-800 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+            className={input}
           />
           <input
             type="password"
@@ -50,15 +55,15 @@ export function Login() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="bg-neutral-800 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+            className={input}
           />
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-danger text-sm">{error}</p>}
 
           <button
             type="submit"
             disabled={busy}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 font-medium transition"
+            className="bg-ink text-canvas rounded-xl py-3 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition mt-1"
           >
             {mode === 'login' ? 'Sign in' : 'Create account'}
           </button>
@@ -67,7 +72,7 @@ export function Login() {
         <button
           type="button"
           onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-          className="text-neutral-400 text-sm mt-3 hover:text-white transition"
+          className="text-ink-3 text-xs mt-3 hover:text-ink-2 transition"
         >
           {mode === 'login'
             ? "Don't have an account? Sign up"
@@ -75,15 +80,15 @@ export function Login() {
         </button>
 
         <div className="flex items-center gap-3 my-5">
-          <div className="h-px bg-neutral-800 flex-1" />
-          <span className="text-neutral-500 text-xs">OR</span>
-          <div className="h-px bg-neutral-800 flex-1" />
+          <div className="h-px bg-line flex-1" />
+          <span className="text-ink-3 text-[11px]">OR</span>
+          <div className="h-px bg-line flex-1" />
         </div>
 
         <button
           type="button"
           onClick={() => loginWithGoogle().catch((err) => setError(err.message))}
-          className="w-full bg-white hover:bg-neutral-200 text-neutral-900 rounded-lg py-2 font-medium transition"
+          className="w-full bg-raised text-ink rounded-xl py-3 text-sm font-medium hover:bg-line transition"
         >
           Continue with Google
         </button>

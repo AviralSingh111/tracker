@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { todayKey } from '../lib/dates'
 import { addManualEntry } from '../lib/entries'
 import { useAuth } from '../contexts/AuthContext'
+import { Card, SectionLabel } from './ui'
 
 export function ManualEntryForm() {
   const { user } = useAuth()
@@ -27,69 +28,72 @@ export function ManualEntryForm() {
     }
   }
 
+  const input =
+    'bg-raised text-ink text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-live nums'
+
   if (!open) {
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="bg-neutral-900 hover:bg-neutral-800 text-neutral-300 rounded-2xl p-4 text-sm font-medium transition"
+        className="text-ink-3 hover:text-ink-2 text-sm py-2 transition"
       >
-        + Add entry for a custom date
+        + Add an entry for another day
       </button>
     )
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-neutral-900 rounded-2xl p-6 flex flex-col gap-3"
-    >
-      <p className="text-neutral-400 text-sm">Add a custom entry</p>
+    <Card className="px-5 py-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <SectionLabel>Add an entry</SectionLabel>
 
-      <input
-        type="date"
-        required
-        value={date}
-        max={todayKey()}
-        onChange={(e) => setDate(e.target.value)}
-        className="bg-neutral-800 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
-      />
-
-      <div className="flex gap-2">
         <input
-          type="time"
+          type="date"
           required
-          value={clockInTime}
-          onChange={(e) => setClockInTime(e.target.value)}
-          className="flex-1 bg-neutral-800 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+          value={date}
+          max={todayKey()}
+          onChange={(e) => setDate(e.target.value)}
+          className={input}
         />
-        <input
-          type="time"
-          required
-          value={clockOutTime}
-          onChange={(e) => setClockOutTime(e.target.value)}
-          className="flex-1 bg-neutral-800 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-      </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+        <div className="flex gap-2 items-center">
+          <input
+            type="time"
+            required
+            value={clockInTime}
+            onChange={(e) => setClockInTime(e.target.value)}
+            className={`${input} flex-1 min-w-0`}
+          />
+          <span className="text-ink-3 text-xs">–</span>
+          <input
+            type="time"
+            required
+            value={clockOutTime}
+            onChange={(e) => setClockOutTime(e.target.value)}
+            className={`${input} flex-1 min-w-0`}
+          />
+        </div>
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg py-2 font-medium transition"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={busy}
-          className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 font-medium transition"
-        >
-          Save
-        </button>
-      </div>
-    </form>
+        {error && <p className="text-danger text-sm">{error}</p>}
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="flex-1 bg-raised text-ink-2 rounded-xl py-2.5 text-sm font-medium hover:text-ink transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={busy}
+            className="flex-1 bg-live text-canvas rounded-xl py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </Card>
   )
 }

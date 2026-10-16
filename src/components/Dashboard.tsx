@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import {
   calculateRemaining,
@@ -7,7 +7,9 @@ import {
   summarizeWeeks,
 } from '../lib/averageCalc'
 import { todayKey } from '../lib/dates'
-import { formatMonthKey, formatWeekRange } from '../lib/format'
+import { formatHours, toTimeInput } from '../lib/format'
+import { offDayLabel } from '../lib/holidays'
+import { useNow } from '../lib/useNow'
 import {
   clockIn,
   clockOut,
@@ -16,29 +18,45 @@ import {
 } from '../lib/entries'
 import { saveSettings, subscribeSettings } from '../lib/settings'
 import type { TimeEntry, UserSettings } from '../types'
-import { AlertBanner } from './AlertBanner'
-import { ClockCard } from './ClockCard'
-import { CountdownCard } from './CountdownCard'
-import { HistoryTable } from './HistoryTable'
+import { ActionBar } from './ActionBar'
+import { AutoClosedNudge } from './AutoClosedNudge'
+import { HeroCard } from './HeroCard'
+import { HistoryPanel } from './HistoryPanel'
 import { ManualEntryForm } from './ManualEntryForm'
-import { PeriodSummaryCard } from './PeriodSummaryCard'
+import { PullToRefresh } from './PullToRefresh'
 import { SettingsPanel } from './SettingsPanel'
+import { DashboardSkeleton } from './Skeleton'
+import { StatusCard } from './StatusCard'
 
 // A year, so past months keep their averages instead of ageing out.
 const HISTORY_DAYS = 365
+// How far back a forgotten clock-out is still worth raising.
+const NUDGE_WINDOW_DAYS = 7
 
 export function Dashboard() {
   const { user, logout } = useAuth()
   const [entries, setEntries] = useState<TimeEntry[]>([])
+  const [entriesLoaded, setEntriesLoaded] = useState(false)
   const [settings, setSettings] = useState<UserSettings>({ targetHours: 8 })
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [clockError, setClockError] = useState<string | null>(null)
-  const [now, setNow] = useState(Date.now())
+  const [focusDate, setFocusDate] = useState<string | null>(null)
+  const [dismissed, setDismissed] = useState<string[]>([])
+  // Bumped by a pull, which tears the listeners down and re-establishes them.
+  const [reloadKey, setReloadKey] = useState(0)
+  const historyRef = useRef<HTMLDivElement>(null)
+
+  const isClockedIn = entries.some((e) => e.clockOut === null)
+  const now = useNow(isClockedIn)
 
   useEffect(() => {
     if (!user) return
-    const unsubEntries = subscribeEntries(user.uid, HISTORY_DAYS, setEntries)
+    const unsubEntries = subscribeEntries(user.uid, HISTORY_DAYS, (next) => {
+      setEntries(next)
+      setEntriesLoaded(true)
+    })
     const unsubSettings = subscribeSettings(user.uid, (next) => {
       setSettings(next)
       setSettingsLoaded(true)
@@ -47,15 +65,7 @@ export function Dashboard() {
       unsubEntries()
       unsubSettings()
     }
-  }, [user])
-
-  // Tick every second while clocked in so the countdown runs live; 30s is
-  // plenty otherwise.
-  useEffect(() => {
-    const isClockedIn = entries.some((e) => e.clockOut === null)
-    const id = setInterval(() => setNow(Date.now()), isClockedIn ? 1_000 : 30_000)
-    return () => clearInterval(id)
-  }, [entries])
+  }, [user, reloadKey])
 
   // An entry left open past midnight is auto-closed at the daily target rather
   // than counting up forever. Waits for real settings so it credits the user's
@@ -67,6 +77,10 @@ export function Dashboard() {
     })
   }, [user, entries, settings.targetHours, settingsLoaded])
 
+  const handleRefresh = useCallback(async () => {
+    setReloadKey((k) => k + 1)
+  }, [])
+
   // Only today's session is "live"; anything older is auto-closed above.
   const openEntry = entries.find(
     (e) => e.clockOut === null && e.date === todayKey(),
@@ -77,6 +91,24 @@ export function Dashboard() {
   const remaining = calculateRemaining(entries, settings.targetHours, now)
   const weeks = summarizeWeeks(entries, settings.targetHours, now)
   const months = summarizeMonths(entries, settings.targetHours, now)
+
+  // The tab itself reports the countdown, so checking it doesn't need the app.
+  useEffect(() => {
+    document.title = openEntry
+      ? `${formatHours(remaining.todayRemainingHours)} left · Tracker`
+      : 'Tracker'
+  }, [openEntry, remaining.todayRemainingHours])
+
+  const nudge = useMemo(() => {
+    const cutoff = new Date(now)
+    cutoff.setDate(cutoff.getDate() - NUDGE_WINDOW_DAYS)
+    const earliest = todayKey(cutoff)
+    return entries
+      .filter(
+        (e) => e.autoClosed && e.date >= earliest && !dismissed.includes(e.id),
+      )
+      .sort((a, b) => b.date.localeCompare(a.date))[0]
+  }, [entries, dismissed, now])
 
   async function handleClockIn(atTime: string) {
     if (!user) return
@@ -105,75 +137,111 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 px-4 py-8">
-      <div className="max-w-md mx-auto flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-white">Tracker</h1>
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="text-neutral-500 text-sm hover:text-white transition"
-          >
-            Sign out
-          </button>
+    <div className="relative min-h-screen bg-canvas px-4 pt-5 pb-32">
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="max-w-md mx-auto flex flex-col gap-3">
+          <header className="flex items-center justify-between gap-2 mb-1">
+            <h1 className="text-lg font-semibold text-ink tracking-tight">
+              Tracker
+            </h1>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(!settingsOpen)}
+                aria-expanded={settingsOpen}
+                className={`text-xs rounded-full px-2.5 py-1 border transition nums ${
+                  settingsOpen
+                    ? 'border-line bg-raised text-ink'
+                    : 'border-line text-ink-3 hover:text-ink-2'
+                }`}
+              >
+                {formatHours(settings.targetHours)}/day
+              </button>
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="text-ink-3 text-xs hover:text-ink-2 transition"
+              >
+                Sign out
+              </button>
+            </div>
+          </header>
+
+          {!entriesLoaded ? (
+            <DashboardSkeleton />
+          ) : (
+            <>
+              {settingsOpen && (
+                <SettingsPanel
+                  targetHours={settings.targetHours}
+                  onChange={(targetHours) =>
+                    user && saveSettings(user.uid, { targetHours })
+                  }
+                />
+              )}
+
+              {nudge && (
+                <AutoClosedNudge
+                  entry={nudge}
+                  onFix={() => {
+                    setFocusDate(nudge.date)
+                    historyRef.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    })
+                  }}
+                  onDismiss={() => setDismissed([...dismissed, nudge.id])}
+                />
+              )}
+
+              <HeroCard
+                todayHours={todayHours}
+                targetHours={settings.targetHours}
+                remainingHours={remaining.todayRemainingHours}
+                isWorkday={remaining.isTodayWorkday}
+                offReason={offDayLabel(todayKey(new Date(now)))}
+                live={Boolean(openEntry)}
+                now={now}
+                clockedInAt={openEntry ? toTimeInput(openEntry.clockIn) : null}
+              />
+
+              {hasEnoughData && (
+                <StatusCard
+                  days={days}
+                  currentWeek={weeks.find((w) => w.isCurrent)}
+                  currentMonth={months.find((m) => m.isCurrent)}
+                  targetHours={settings.targetHours}
+                  now={now}
+                />
+              )}
+
+              <div ref={historyRef} className="scroll-mt-4">
+                <HistoryPanel
+                  key={focusDate ?? 'root'}
+                  days={days}
+                  entries={entries}
+                  now={now}
+                  weeks={weeks}
+                  months={months}
+                  targetHours={settings.targetHours}
+                  focusDate={focusDate}
+                />
+              </div>
+
+              <ManualEntryForm />
+            </>
+          )}
         </div>
+      </PullToRefresh>
 
-        <ClockCard
-          openEntry={openEntry}
-          todayHours={todayHours}
-          busy={busy}
-          onClockIn={handleClockIn}
-          onClockOut={handleClockOut}
-        />
-
-        {clockError && (
-          <p className="text-red-400 text-sm text-center -mt-2">{clockError}</p>
-        )}
-
-        {hasEnoughData && (
-          <CountdownCard
-            remaining={remaining}
-            targetHours={settings.targetHours}
-            live={Boolean(openEntry)}
-            now={now}
-          />
-        )}
-
-        <AlertBanner now={now} />
-
-        <SettingsPanel
-          targetHours={settings.targetHours}
-          onChange={(targetHours) => user && saveSettings(user.uid, { targetHours })}
-        />
-
-        <ManualEntryForm />
-
-        {hasEnoughData && (
-          <>
-            <PeriodSummaryCard
-              title="Weekly average"
-              periods={weeks}
-              formatKey={formatWeekRange}
-              targetHours={settings.targetHours}
-            />
-
-            <PeriodSummaryCard
-              title="Monthly average"
-              periods={months}
-              formatKey={formatMonthKey}
-              targetHours={settings.targetHours}
-            />
-          </>
-        )}
-
-        <HistoryTable
-          days={days}
-          entries={entries}
-          now={now}
-          weeks={weeks}
-          months={months}
-        />
-      </div>
+      <ActionBar
+        openEntry={openEntry}
+        now={now}
+        busy={busy || !entriesLoaded}
+        error={clockError}
+        onClockIn={handleClockIn}
+        onClockOut={handleClockOut}
+      />
     </div>
   )
 }
